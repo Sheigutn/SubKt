@@ -201,16 +201,19 @@ private class FontCollection(fontFiles: Iterable<File>) {
         return abs(state.weight - font.weight) + abs(slant - font.slant)
     }
 
-    private fun matchFont(state: State) =
-            when (val exactMatch = byFullName[state.font]) {
+    private fun matchFont(state: State): FontMatch {
+        return when (val exactMatch = byFullName[state.font]) {
                 is Font -> FontMatch(exactMatch, true)
-                else -> when (val family = byFamilyName[state.font]) {
+                else -> if (state.font.startsWith("@")) {
+                    matchFont(state.copy(font = state.font.substring(1)))
+                } else when (val family = byFamilyName[state.font]) {
                     null -> FontMatch(null, false)
                     else -> family.minBy { similarity(state, it) }?.let {
                         FontMatch(it, false)
                     } ?: FontMatch(null, false)
                 }
             }
+    }
 
     fun match(state: State): FontMatch {
         val s = state.copy(font = state.font.toLowerCase(), drawing = false)
